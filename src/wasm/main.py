@@ -11,6 +11,7 @@ from wasm.cli.commands import (
     handle_site,
     handle_service,
     handle_cert,
+    handle_setup,
 )
 from wasm.core.logger import Logger
 from wasm.core.exceptions import WASMError
@@ -71,6 +72,13 @@ def main() -> int:
             print("Use: wasm cert --help", file=sys.stderr)
             return 1
         return handle_cert(args)
+    
+    elif command == "setup":
+        if not args.action:
+            print("Error: setup requires an action", file=sys.stderr)
+            print("Use: wasm setup --help", file=sys.stderr)
+            return 1
+        return handle_setup(args)
     
     else:
         print(f"Unknown command: {command}", file=sys.stderr)

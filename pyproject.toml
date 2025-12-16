@@ -74,6 +74,7 @@ include = ["wasm*"]
 [tool.setuptools.package-data]
 wasm = [
     "templates/**/*.j2",
+    "completions/*",
     "py.typed",
 ]
 

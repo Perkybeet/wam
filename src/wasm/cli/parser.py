@@ -87,6 +87,9 @@ For more information, visit: https://github.com/your-org/wasm
     # Cert commands
     _add_cert_parser(subparsers)
     
+    # Setup commands
+    _add_setup_parser(subparsers)
+    
     return parser
 
 
@@ -625,6 +628,49 @@ def _add_cert_parser(subparsers) -> None:
         "--force", "-f",
         action="store_true",
         help="Skip confirmation",
+    )
+
+
+def _add_setup_parser(subparsers) -> None:
+    """Add setup subcommands."""
+    setup = subparsers.add_parser(
+        "setup",
+        help="Initial setup and configuration",
+        description="Setup WASM directories, permissions, and shell completions",
+    )
+    
+    setup_sub = setup.add_subparsers(
+        dest="action",
+        title="actions",
+        metavar="<action>",
+    )
+    
+    # setup init
+    setup_sub.add_parser(
+        "init",
+        help="Initialize WASM directories and configuration (requires sudo)",
+    )
+    
+    # setup completions
+    completions = setup_sub.add_parser(
+        "completions",
+        help="Install shell completions",
+    )
+    completions.add_argument(
+        "--shell", "-s",
+        choices=["bash", "zsh", "fish"],
+        help="Shell to install completions for (auto-detected if not specified)",
+    )
+    completions.add_argument(
+        "--user-only", "-u",
+        action="store_true",
+        help="Install for current user only (no sudo required)",
+    )
+    
+    # setup permissions
+    setup_sub.add_parser(
+        "permissions",
+        help="Check and display permission status",
     )
 
 

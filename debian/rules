@@ -16,6 +16,15 @@ override_dh_auto_install:
 	install -d debian/wasm/var/www/apps
 	# Create log directory
 	install -d debian/wasm/var/log/wasm
+	# Install bash completion
+	install -d debian/wasm/usr/share/bash-completion/completions
+	install -m 644 src/wasm/completions/wasm.bash debian/wasm/usr/share/bash-completion/completions/wasm
+	# Install zsh completion
+	install -d debian/wasm/usr/share/zsh/vendor-completions
+	install -m 644 src/wasm/completions/_wasm debian/wasm/usr/share/zsh/vendor-completions/_wasm
+	# Install fish completion
+	install -d debian/wasm/usr/share/fish/vendor_completions.d
+	install -m 644 src/wasm/completions/wasm.fish debian/wasm/usr/share/fish/vendor_completions.d/wasm.fish
 
 override_dh_installsystemd:
 	# No systemd services for the package itself

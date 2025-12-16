@@ -1,0 +1,392 @@
+#compdef wasm
+# Zsh completion script for WASM (Web App System Management)
+#
+# Installation:
+#   Option 1 - System-wide (requires sudo):
+#     sudo cp _wasm /usr/share/zsh/site-functions/_wasm
+#
+#   Option 2 - User-local:
+#     mkdir -p ~/.zsh/completions
+#     cp _wasm ~/.zsh/completions/_wasm
+#     # Add to .zshrc: fpath=(~/.zsh/completions $fpath)
+#
+#   After installation, run: autoload -Uz compinit && compinit
+
+# Helper functions
+_wasm_apps() {
+    local apps_dir="/var/www/apps"
+    local apps=()
+    if [[ -d "$apps_dir" ]]; then
+        for app in "$apps_dir"/*/; do
+            if [[ -d "$app" ]]; then
+                apps+=("$(basename "$app")")
+            fi
+        done 2>/dev/null
+    fi
+    _describe -t apps 'deployed applications' apps
+}
+
+_wasm_services() {
+    local services=()
+    services=(${(f)"$(systemctl list-units --type=service --all 2>/dev/null | \
+        grep -E '^wasm-[^ ]+\.service' | \
+        sed 's/^\(wasm-[^ ]*\)\.service.*/\1/' | \
+        sed 's/^wasm-//')"})
+    _describe -t services 'wasm services' services
+}
+
+_wasm_nginx_sites() {
+    local sites=()
+    local sites_dir="/etc/nginx/sites-available"
+    if [[ -d "$sites_dir" ]]; then
+        for site in "$sites_dir"/*; do
+            if [[ -f "$site" && "$(basename "$site")" != "default" ]]; then
+                sites+=("$(basename "$site")")
+            fi
+        done 2>/dev/null
+    fi
+    _describe -t sites 'nginx sites' sites
+}
+
+_wasm_all_sites() {
+    local sites=()
+    local nginx_dir="/etc/nginx/sites-available"
+    local apache_dir="/etc/apache2/sites-available"
+    
+    if [[ -d "$nginx_dir" ]]; then
+        for site in "$nginx_dir"/*; do
+            if [[ -f "$site" && "$(basename "$site")" != "default" ]]; then
+                sites+=("$(basename "$site"):nginx site")
+            fi
+        done 2>/dev/null
+    fi
+    
+    if [[ -d "$apache_dir" ]]; then
+        for site in "$apache_dir"/*.conf; do
+            if [[ -f "$site" ]]; then
+                sites+=("$(basename "$site" .conf):apache site")
+            fi
+        done 2>/dev/null
+    fi
+    _describe -t sites 'web server sites' sites
+}
+
+_wasm_certs() {
+    local certs=()
+    local live_dir="/etc/letsencrypt/live"
+    if [[ -d "$live_dir" ]]; then
+        for cert in "$live_dir"/*/; do
+            if [[ -d "$cert" ]]; then
+                certs+=("$(basename "$cert")")
+            fi
+        done 2>/dev/null
+    fi
+    _describe -t certs 'SSL certificates' certs
+}
+
+# Main completion function
+_wasm() {
+    local context state state_descr line
+    typeset -A opt_args
+    
+    local -a global_opts
+    global_opts=(
+        '(-h --help)'{-h,--help}'[Show help message]'
+        '(-V --version)'{-V,--version}'[Show version]'
+        '(-v --verbose)'{-v,--verbose}'[Enable verbose output]'
+        '(-i --interactive)'{-i,--interactive}'[Run in interactive mode]'
+        '--no-color[Disable colored output]'
+    )
+    
+    _arguments -C \
+        $global_opts \
+        '1: :->command' \
+        '*:: :->args' && return 0
+    
+    case $state in
+        command)
+            local -a commands
+            commands=(
+                # Webapp commands (top-level)
+                'create:Deploy a new web application'
+                'new:Deploy a new web application'
+                'deploy:Deploy a new web application'
+                'list:List deployed applications'
+                'ls:List deployed applications'
+                'status:Show application status'
+                'info:Show application status'
+                'restart:Restart an application'
+                'stop:Stop an application'
+                'start:Start an application'
+                'update:Update an application'
+                'upgrade:Update an application'
+                'delete:Delete an application'
+                'remove:Delete an application'
+                'rm:Delete an application'
+                'logs:View application logs'
+                # Sub-command groups
+                'site:Manage web server sites'
+                'service:Manage systemd services'
+                'svc:Manage systemd services'
+                'cert:Manage SSL certificates'
+                'ssl:Manage SSL certificates'
+                'certificate:Manage SSL certificates'
+                'setup:Initial setup and configuration'
+            )
+            _describe -t commands 'wasm commands' commands
+            ;;
+        args)
+            case $words[1] in
+                # Webapp create command
+                create|new|deploy)
+                    _arguments \
+                        '(-d --domain)'{-d,--domain}'[Target domain name]:domain:' \
+                        '(-s --source)'{-s,--source}'[Source (Git URL or local path)]:source:_files' \
+                        '(-t --type)'{-t,--type}'[Application type]:type:(nextjs nodejs vite python static auto)' \
+                        '(-p --port)'{-p,--port}'[Application port]:port:' \
+                        '(-w --webserver)'{-w,--webserver}'[Web server to use]:webserver:(nginx apache)' \
+                        '(-b --branch)'{-b,--branch}'[Git branch to deploy]:branch:' \
+                        '--no-ssl[Skip SSL certificate configuration]' \
+                        '--env-file[Path to environment file]:env file:_files' \
+                        '(--pm --package-manager)'{--pm,--package-manager}'[Package manager to use]:pm:(npm pnpm bun auto)'
+                    ;;
+                
+                # Webapp status/restart/stop/start
+                status|info|restart|stop|start)
+                    _arguments \
+                        '1:application:_wasm_apps'
+                    ;;
+                
+                # Webapp update
+                update|upgrade)
+                    _arguments \
+                        '1:application:_wasm_apps' \
+                        '(-s --source)'{-s,--source}'[New source URL]:source:_files' \
+                        '(-b --branch)'{-b,--branch}'[Git branch]:branch:' \
+                        '(--pm --package-manager)'{--pm,--package-manager}'[Package manager]:pm:(npm pnpm bun auto)'
+                    ;;
+                
+                # Webapp delete
+                delete|remove|rm)
+                    _arguments \
+                        '1:application:_wasm_apps' \
+                        '(-f --force)'{-f,--force}'[Skip confirmation]' \
+                        '--keep-files[Keep application files]'
+                    ;;
+                
+                # Webapp logs
+                logs)
+                    _arguments \
+                        '1:application:_wasm_apps' \
+                        '(-f --follow)'{-f,--follow}'[Follow log output]' \
+                        '(-n --lines)'{-n,--lines}'[Number of lines]:lines:'
+                    ;;
+                
+                # Site subcommands
+                site)
+                    local -a site_commands
+                    site_commands=(
+                        'create:Create a new site configuration'
+                        'list:List all sites'
+                        'ls:List all sites'
+                        'enable:Enable a site'
+                        'disable:Disable a site'
+                        'delete:Delete a site'
+                        'remove:Delete a site'
+                        'rm:Delete a site'
+                        'show:Show site configuration'
+                        'cat:Show site configuration'
+                    )
+                    
+                    _arguments -C \
+                        '1: :->site_action' \
+                        '*:: :->site_args'
+                    
+                    case $state in
+                        site_action)
+                            _describe -t commands 'site commands' site_commands
+                            ;;
+                        site_args)
+                            case $words[1] in
+                                create)
+                                    _arguments \
+                                        '(-d --domain)'{-d,--domain}'[Domain name]:domain:' \
+                                        '(-w --webserver)'{-w,--webserver}'[Web server]:webserver:(nginx apache)' \
+                                        '(-t --template)'{-t,--template}'[Configuration template]:template:(proxy static)' \
+                                        '(-p --port)'{-p,--port}'[Backend port]:port:'
+                                    ;;
+                                list|ls)
+                                    _arguments \
+                                        '(-w --webserver)'{-w,--webserver}'[Filter by web server]:webserver:(nginx apache all)'
+                                    ;;
+                                enable|disable|show|cat)
+                                    _arguments '1:site:_wasm_all_sites'
+                                    ;;
+                                delete|remove|rm)
+                                    _arguments \
+                                        '1:site:_wasm_all_sites' \
+                                        '(-f --force)'{-f,--force}'[Skip confirmation]'
+                                    ;;
+                            esac
+                            ;;
+                    esac
+                    ;;
+                
+                # Service subcommands
+                service|svc)
+                    local -a service_commands
+                    service_commands=(
+                        'create:Create a new service'
+                        'list:List managed services'
+                        'ls:List managed services'
+                        'status:Show service status'
+                        'info:Show service status'
+                        'start:Start a service'
+                        'stop:Stop a service'
+                        'restart:Restart a service'
+                        'logs:View service logs'
+                        'delete:Delete a service'
+                        'remove:Delete a service'
+                        'rm:Delete a service'
+                    )
+                    
+                    _arguments -C \
+                        '1: :->service_action' \
+                        '*:: :->service_args'
+                    
+                    case $state in
+                        service_action)
+                            _describe -t commands 'service commands' service_commands
+                            ;;
+                        service_args)
+                            case $words[1] in
+                                create)
+                                    _arguments \
+                                        '(-n --name)'{-n,--name}'[Service name]:name:' \
+                                        '(-c --command)'{-c,--command}'[Command to execute]:command:' \
+                                        '(-d --directory)'{-d,--directory}'[Working directory]:directory:_files -/' \
+                                        '(-u --user)'{-u,--user}'[User to run as]:user:_users' \
+                                        '--description[Service description]:description:'
+                                    ;;
+                                list|ls)
+                                    _arguments \
+                                        '(-a --all)'{-a,--all}'[Show all system services]'
+                                    ;;
+                                status|info|start|stop|restart)
+                                    _arguments '1:service:_wasm_services'
+                                    ;;
+                                logs)
+                                    _arguments \
+                                        '1:service:_wasm_services' \
+                                        '(-f --follow)'{-f,--follow}'[Follow log output]' \
+                                        '(-n --lines)'{-n,--lines}'[Number of lines]:lines:'
+                                    ;;
+                                delete|remove|rm)
+                                    _arguments \
+                                        '1:service:_wasm_services' \
+                                        '(-f --force)'{-f,--force}'[Skip confirmation]'
+                                    ;;
+                            esac
+                            ;;
+                    esac
+                    ;;
+                
+                # Cert subcommands
+                cert|ssl|certificate)
+                    local -a cert_commands
+                    cert_commands=(
+                        'create:Obtain a new certificate'
+                        'obtain:Obtain a new certificate'
+                        'new:Obtain a new certificate'
+                        'list:List all certificates'
+                        'ls:List all certificates'
+                        'info:Show certificate info'
+                        'show:Show certificate info'
+                        'renew:Renew certificates'
+                        'revoke:Revoke a certificate'
+                        'delete:Delete a certificate'
+                        'remove:Delete a certificate'
+                        'rm:Delete a certificate'
+                    )
+                    
+                    _arguments -C \
+                        '1: :->cert_action' \
+                        '*:: :->cert_args'
+                    
+                    case $state in
+                        cert_action)
+                            _describe -t commands 'cert commands' cert_commands
+                            ;;
+                        cert_args)
+                            case $words[1] in
+                                create|obtain|new)
+                                    _arguments \
+                                        '*'{-d,--domain}'[Domain name (can be repeated)]:domain:' \
+                                        '(-e --email)'{-e,--email}'[Email for registration]:email:' \
+                                        '(-w --webroot)'{-w,--webroot}'[Webroot path]:webroot:_files -/' \
+                                        '--standalone[Use standalone mode]' \
+                                        '--nginx[Use Nginx plugin]' \
+                                        '--apache[Use Apache plugin]' \
+                                        '--dry-run[Test without obtaining]'
+                                    ;;
+                                info|show)
+                                    _arguments '1:certificate:_wasm_certs'
+                                    ;;
+                                renew)
+                                    _arguments \
+                                        '(-d --domain)'{-d,--domain}'[Specific domain to renew]:domain:_wasm_certs' \
+                                        '--force[Force renewal]' \
+                                        '--dry-run[Test without renewing]'
+                                    ;;
+                                revoke)
+                                    _arguments \
+                                        '1:certificate:_wasm_certs' \
+                                        '--delete[Delete after revoking]'
+                                    ;;
+                                delete|remove|rm)
+                                    _arguments \
+                                        '1:certificate:_wasm_certs' \
+                                        '(-f --force)'{-f,--force}'[Skip confirmation]'
+                                    ;;
+                            esac
+                            ;;
+                    esac
+                    ;;
+                
+                # Setup subcommands
+                setup)
+                    local -a setup_commands
+                    setup_commands=(
+                        'init:Initialize WASM directories and configuration'
+                        'completions:Install shell completions'
+                        'permissions:Check permission status'
+                    )
+                    
+                    _arguments -C \
+                        '1: :->setup_action' \
+                        '*:: :->setup_args'
+                    
+                    case $state in
+                        setup_action)
+                            _describe -t commands 'setup commands' setup_commands
+                            ;;
+                        setup_args)
+                            case $words[1] in
+                                completions)
+                                    _arguments \
+                                        '(-s --shell)'{-s,--shell}'[Shell type]:shell:(bash zsh fish)' \
+                                        '(-u --user-only)'{-u,--user-only}'[Install for current user only]'
+                                    ;;
+                                init|permissions)
+                                    # No additional arguments
+                                    ;;
+                            esac
+                            ;;
+                    esac
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_wasm "$@"

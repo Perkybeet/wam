@@ -1,3 +1,27 @@
+wasm (0.1.0-2~noble) noble; urgency=medium
+
+  * Add shell completions for bash, zsh, and fish
+  * Add 'wasm setup' command for initial setup and completions installation
+  * Update postinst to show shell completion info
+
+ -- Yago López Prado <yago.lopez.adeje@gmail.com>  Mon, 16 Dec 2025 16:00:00 +0000
+
+wasm (0.1.0-2~plucky) plucky; urgency=medium
+
+  * Add shell completions for bash, zsh, and fish
+  * Add 'wasm setup' command for initial setup and completions installation
+  * Update postinst to show shell completion info
+
+ -- Yago López Prado <yago.lopez.adeje@gmail.com>  Mon, 16 Dec 2025 15:59:00 +0000
+
+wasm (0.1.0-2~noble) noble; urgency=medium
+
+  * Add shell completions for bash, zsh, and fish
+  * Add 'wasm setup' command for initial setup and completions installation
+  * Update postinst to show shell completion info
+
+ -- Yago López Prado <yago.lopez.adeje@gmail.com>  Mon, 16 Dec 2025 15:58:00 +0000
+
 wasm (0.1.0-1ubuntu3) noble; urgency=medium
 
   * Fix critical bug: Logger.stream attribute order in __init__
