@@ -1,0 +1,3 @@
+etc/wasm
+var/www/apps
+var/log/wasm

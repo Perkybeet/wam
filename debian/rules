@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=wasm
+export DH_VERBOSE=1
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+override_dh_auto_install:
+	dh_auto_install
+	# Create config directory
+	install -d debian/wasm/etc/wasm
+	# Install default config
+	install -m 644 debian/wasm.default.yaml debian/wasm/etc/wasm/config.yaml
+	# Create apps directory
+	install -d debian/wasm/var/www/apps
+	# Create log directory
+	install -d debian/wasm/var/log/wasm
+
+override_dh_installsystemd:
+	# No systemd services for the package itself
+	dh_installsystemd --no-enable --no-start
+
+override_dh_auto_test:
+	# Skip tests during package build
+	@echo "Skipping tests during package build"

@@ -1,0 +1,22 @@
+# WASM Default Configuration
+# Location: /etc/wasm/config.yaml
+
+# Directory where applications are deployed
+apps_directory: /var/www/apps
+
+# Default web server (nginx or apache)
+webserver: nginx
+
+# User for running services
+service_user: www-data
+
+# SSL configuration
+ssl:
+  enabled: true
+  provider: certbot
+  email: ""
+
+# Logging configuration
+logging:
+  level: info
+  directory: /var/log/wasm

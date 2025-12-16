@@ -1,0 +1,48 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    configure)
+        # Set proper permissions for directories
+        if [ -d /var/www/apps ]; then
+            chown -R www-data:www-data /var/www/apps
+            chmod 755 /var/www/apps
+        fi
+        
+        if [ -d /var/log/wasm ]; then
+            chown -R www-data:www-data /var/log/wasm
+            chmod 755 /var/log/wasm
+        fi
+        
+        if [ -d /etc/wasm ]; then
+            chmod 755 /etc/wasm
+            chmod 644 /etc/wasm/config.yaml 2>/dev/null || true
+        fi
+        
+        echo ""
+        echo "========================================"
+        echo "  WASM installed successfully!"
+        echo "========================================"
+        echo ""
+        echo "Quick start:"
+        echo "  wasm --help              Show help"
+        echo "  wasm --interactive       Interactive mode"
+        echo "  wasm webapp create ...   Deploy an app"
+        echo ""
+        echo "Configuration: /etc/wasm/config.yaml"
+        echo "========================================"
+        echo ""
+        ;;
+    
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+    
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
