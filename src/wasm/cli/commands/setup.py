@@ -438,33 +438,35 @@ def _handle_init(args: Namespace) -> int:
         logger.warning(f"Failed to create config directory: {e}")
     
     # =========================================================================
-    # Phase 6: Create Configuration File
+    # Phase 6: Create/Update Configuration File
     # =========================================================================
     logger.step(6, 6, "Creating configuration file")
     
-    if not DEFAULT_CONFIG_PATH.exists():
-        try:
-            from wasm.core.config import Config
-            config = Config()
-            
-            # Update config with user choices
-            ssl_email = config_choices.get("ssl_email", "")
-            if ssl_email:
-                config.set("ssl.email", ssl_email)
-            
-            webserver = config_choices.get("webserver_choice", "nginx")
-            config.set("webserver", webserver)
-            
-            # Save enabled package managers to config
-            pms = config_choices.get("package_managers", ["npm"])
-            config.set("nodejs.package_managers", pms)
-            
-            config.save()
+    try:
+        from wasm.core.config import Config
+        config = Config()
+        
+        config_exists = DEFAULT_CONFIG_PATH.exists()
+        
+        # Update config with user choices
+        ssl_email = config_choices.get("ssl_email", "")
+        if ssl_email:
+            config.set("ssl.email", ssl_email)
+        
+        webserver = config_choices.get("webserver_choice", "nginx")
+        config.set("webserver", webserver)
+        
+        # Save enabled package managers to config
+        pms = config_choices.get("package_managers", ["npm"])
+        config.set("nodejs.package_managers", pms)
+        
+        config.save()
+        if config_exists:
+            logger.success(f"Updated {DEFAULT_CONFIG_PATH}")
+        else:
             logger.success(f"Created {DEFAULT_CONFIG_PATH}")
-        except Exception as e:
-            logger.warning(f"Could not create config file: {e}")
-    else:
-        logger.info(f"Config file already exists: {DEFAULT_CONFIG_PATH}")
+    except Exception as e:
+        logger.warning(f"Could not save config file: {e}")
     
     # =========================================================================
     # Final Summary

@@ -551,10 +551,28 @@ class BaseDeployer(ABC):
         
         result = self._run(command, timeout=600)
         if not result.success:
-            raise DeploymentError(
-                "Dependency installation failed",
-                details=result.stderr,
-            )
+            # Try without --frozen-lockfile if it failed (common with pnpm/yarn version mismatches)
+            if "--frozen-lockfile" in command:
+                self.logger.warning("Strict lockfile install failed, trying regular install...")
+                command_fallback = [c for c in command if c != "--frozen-lockfile"]
+                self.logger.substep(f"Running: {' '.join(command_fallback)}")
+                result = self._run(command_fallback, timeout=600)
+            
+            if not result.success:
+                # Combine stdout and stderr for better error visibility
+                error_output = ""
+                if result.stderr:
+                    error_output = result.stderr
+                if result.stdout:
+                    if error_output:
+                        error_output += "\n" + result.stdout
+                    else:
+                        error_output = result.stdout
+                
+                raise DeploymentError(
+                    "Dependency installation failed",
+                    details=error_output or "No error output captured. Check if the package manager is properly installed.",
+                )
         
         self.post_install()
         return True
@@ -576,9 +594,19 @@ class BaseDeployer(ABC):
         
         result = self._run(command, timeout=900)
         if not result.success:
+            # Combine stdout and stderr for better error visibility
+            error_output = ""
+            if result.stderr:
+                error_output = result.stderr
+            if result.stdout:
+                if error_output:
+                    error_output += "\n" + result.stdout
+                else:
+                    error_output = result.stdout
+            
             raise BuildError(
                 "Build failed",
-                details=result.stderr,
+                details=error_output or "No error output captured.",
             )
         
         self.post_build()

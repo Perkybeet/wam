@@ -59,13 +59,18 @@ def handle_webapp(args: Namespace) -> int:
         return handler(args)
     except WASMError as e:
         logger = Logger(verbose=args.verbose)
-        logger.error(str(e))
+        logger.error(e.message)
         if e.details:
-            # Print details preserving formatting (for SSH guidance, etc.)
-            print()
-            for line in e.details.split("\n"):
+            # Print details preserving formatting (for SSH guidance, command output, etc.)
+            logger.blank()
+            # Limit output to avoid flooding the terminal
+            detail_lines = e.details.split("\n")
+            max_lines = 50 if args.verbose else 20
+            for line in detail_lines[:max_lines]:
                 print(f"  {line}")
-            print()
+            if len(detail_lines) > max_lines:
+                print(f"  ... ({len(detail_lines) - max_lines} more lines, use --verbose for full output)")
+            logger.blank()
         return 1
     except Exception as e:
         logger = Logger(verbose=args.verbose)

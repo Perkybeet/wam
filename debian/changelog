@@ -1,3 +1,13 @@
+wasm (0.9.2-1~noble) noble; urgency=medium
+
+  * Fix: Show complete error output (stdout+stderr) when dependency install fails
+  * Fix: Auto-retry without --frozen-lockfile when strict lockfile install fails
+  * Fix: Config file now properly updated during 'wasm setup init' when exists
+  * Fix: Better error display with line limit (20 default, 50 with --verbose)
+  * Improve pnpm/yarn compatibility with version mismatch fallback
+
+ -- Yago López Prado <yago.lopez.adeje@gmail.com>  Tue, 17 Dec 2025 00:00:00 +0000
+
 wasm (0.9.1-1~noble) noble; urgency=medium
 
   * Fix setup.py for Ubuntu Jammy compatibility
