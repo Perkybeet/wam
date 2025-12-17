@@ -37,16 +37,21 @@
 ### From PPA (Recommended)
 
 ```bash
-sudo add-apt-repository ppa:your-org/wasm
+sudo add-apt-repository ppa:yago2003/wasm
 sudo apt update
 sudo apt install wasm
 ```
 
+Supported Ubuntu versions:
+- Ubuntu 24.04 LTS (Noble Numbat)
+- Ubuntu 24.10 (Plucky Puffin)
+- Ubuntu 25.04 (Questing Qetzal)
+
 ### From .deb Package
 
 ```bash
-wget https://github.com/your-org/wasm/releases/latest/download/wasm_1.0.0_all.deb
-sudo dpkg -i wasm_1.0.0_all.deb
+wget https://github.com/Perkybeet/wasm/releases/latest/download/wasm_0.8.2_all.deb
+sudo dpkg -i wasm_0.8.2_all.deb
 sudo apt install -f  # Install dependencies if needed
 ```
 
@@ -397,7 +402,7 @@ We welcome contributions! Please see our [Contributing Guide](.github/CONTRIBUTI
 
 ```bash
 # Development setup
-git clone https://github.com/your-org/wasm.git
+git clone https://github.com/Perkybeet/wasm.git
 cd wasm
 python -m venv venv
 source venv/bin/activate
@@ -407,8 +412,16 @@ pip install -e ".[dev]"
 pytest
 
 # Build .deb package
-make deb
+make debian
+
+# Build and upload to PPA (all distributions)
+make ppa-upload
+
+# Or for specific distributions
+./build-and-upload-ppa.sh noble plucky
 ```
+
+For detailed information about building and uploading to PPA, see [docs/PPA_UPLOAD.md](docs/PPA_UPLOAD.md).
 
 ---
 
