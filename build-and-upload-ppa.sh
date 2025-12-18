@@ -11,7 +11,7 @@
 #   ./build-and-upload-ppa.sh  # Uses default distributions
 #
 
-set -e  # Exit on error
+# Don't use set -e as we handle errors manually
 
 # Configuration
 PPA="ppa:yago2003/wasm"
@@ -85,10 +85,12 @@ build_source_package() {
     local dist=$1
     
     log_info "Building source package for ${dist}..."
-    make clean > /dev/null 2>&1
-    make debian-source > /dev/null 2>&1
     
-    if [ $? -eq 0 ]; then
+    if ! make clean > /dev/null 2>&1; then
+        log_warning "make clean had warnings (continuing anyway)"
+    fi
+    
+    if make debian-source > /dev/null 2>&1; then
         log_success "Source package built for ${dist}"
         return 0
     else
@@ -102,9 +104,8 @@ sign_package() {
     local changes_file=$1
     
     log_info "Signing package: ${changes_file}"
-    debsign -k "$GPG_KEY" "$changes_file" > /dev/null 2>&1
     
-    if [ $? -eq 0 ]; then
+    if debsign -k "$GPG_KEY" "$changes_file" > /dev/null 2>&1; then
         log_success "Package signed successfully"
         return 0
     else
@@ -119,17 +120,28 @@ upload_to_ppa() {
     
     log_info "Uploading to PPA: ${PPA}"
     
+    local output
+    output=$(dput "$PPA" "$changes_file" 2>&1)
+    local exit_code=$?
+    
     # Check if already uploaded
-    if dput "$PPA" "$changes_file" 2>&1 | grep -q "already been uploaded"; then
+    if echo "$output" | grep -q "already been uploaded"; then
         log_warning "Package already uploaded, forcing re-upload..."
-        dput --force "$PPA" "$changes_file" > /dev/null 2>&1
+        if dput --force "$PPA" "$changes_file" > /dev/null 2>&1; then
+            log_success "Package uploaded successfully (forced)"
+            return 0
+        else
+            log_error "Failed to force upload package"
+            return 1
+        fi
     fi
     
-    if [ $? -eq 0 ]; then
+    if [ $exit_code -eq 0 ]; then
         log_success "Package uploaded successfully"
         return 0
     else
         log_error "Failed to upload package"
+        echo "$output"
         return 1
     fi
 }
@@ -249,17 +261,25 @@ main() {
     
     # Process each distribution
     for dist in "${distributions[@]}"; do
-        if process_distribution "$dist"; then
-            ((success_count++))
-        else
-            ((failure_count++))
-            failed_dists+=("$dist")
+        # Restore changelog to original state before each distribution
+        if [ -f "${CHANGELOG_FILE}.backup" ]; then
+            cp "${CHANGELOG_FILE}.backup" "$CHANGELOG_FILE"
         fi
         
-        # Restore changelog for next iteration
-        restore_changelog
+        if process_distribution "$dist"; then
+            ((success_count++)) || true
+        else
+            ((failure_count++)) || true
+            failed_dists+=("$dist")
+        fi
     done
     
+    # Final restore of changelog
+    if [ -f "${CHANGELOG_FILE}.backup" ]; then
+        mv "${CHANGELOG_FILE}.backup" "$CHANGELOG_FILE"
+        log_info "Changelog restored to original state"
+    fi
+
     echo ""
     log_info "================================================"
     log_info "Summary"
@@ -284,14 +304,17 @@ main() {
     fi
 }
 
-# Cleanup function for trap
+# Cleanup function for trap (only on unexpected exit)
 cleanup() {
-    log_info "Cleaning up..."
-    restore_changelog
+    if [ -f "${CHANGELOG_FILE}.backup" ]; then
+        log_info "Cleaning up..."
+        mv "${CHANGELOG_FILE}.backup" "$CHANGELOG_FILE"
+        log_info "Changelog restored from backup"
+    fi
 }
 
-# Set trap to restore changelog on exit
-trap cleanup EXIT INT TERM
+# Set trap to restore changelog on unexpected exit (INT, TERM only, not EXIT)
+trap cleanup INT TERM
 
 # Run main function
 main "$@"

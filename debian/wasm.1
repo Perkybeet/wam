@@ -1,0 +1,838 @@
+.\" WASM - Web App System Management
+.\" Manual page for wasm(1)
+.\"
+.\" Copyright (C) 2024-2025 Yago López Prado
+.\" Licensed under MIT License
+.\"
+.TH WASM 1 "December 2025" "WASM 0.10.0" "User Commands"
+.\"
+.\" ===== NAME =====
+.\"
+.SH NAME
+wasm \- Web App System Management \- Deploy and manage web applications on Linux servers
+.\"
+.\" ===== SYNOPSIS =====
+.\"
+.SH SYNOPSIS
+.B wasm
+[\fB\-\-verbose\fR]
+[\fB\-\-no\-color\fR]
+\fIcommand\fR
+[\fIoptions\fR]
+[\fIarguments\fR]
+.PP
+.B wasm
+\fB\-\-interactive\fR
+.PP
+.B wasm
+\fB\-\-version\fR
+.\"
+.\" ===== DESCRIPTION =====
+.\"
+.SH DESCRIPTION
+.B wasm
+(Web App System Management) is a comprehensive CLI tool for deploying and managing
+web applications on Linux servers. It handles the complete deployment workflow including:
+.IP \(bu 3
+Automatic application type detection (Next.js, Node.js, Vite, Python, Static)
+.IP \(bu 3
+Web server configuration (Nginx/Apache)
+.IP \(bu 3
+SSL certificate management (Let's Encrypt/Certbot)
+.IP \(bu 3
+Systemd service creation and management
+.IP \(bu 3
+Application backup and rollback
+.IP \(bu 3
+Git-based deployments with zero-downtime updates
+.PP
+WASM is designed to simplify the deployment process while maintaining full control
+over the server configuration. It supports multiple package managers (npm, pnpm, bun)
+and can auto-detect the best configuration for your application.
+.\"
+.\" ===== GLOBAL OPTIONS =====
+.\"
+.SH GLOBAL OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Display help message and exit.
+.TP
+.BR \-V ", " \-\-version
+Display version information and exit.
+.TP
+.BR \-v ", " \-\-verbose
+Enable verbose output with debug information.
+.TP
+.BR \-i ", " \-\-interactive
+Run in interactive mode with guided prompts.
+.TP
+.BR \-\-no\-color
+Disable colored output (useful for scripting or logging).
+.\"
+.\" ===== COMMANDS =====
+.\"
+.SH COMMANDS
+.\"
+.\" --- WEBAPP COMMANDS ---
+.\"
+.SS "Application Management"
+These commands manage the complete lifecycle of web applications.
+.TP
+.BR "create" " (aliases: " new ", " deploy ")"
+Deploy a new web application from a Git repository or local path.
+.RS
+.TP
+.BR \-d ", " \-\-domain " \fIDOMAIN\fR"
+Target domain name (required). Example: example.com, app.example.com
+.TP
+.BR \-s ", " \-\-source " \fISOURCE\fR"
+Source URL or path (required). Supports:
+.RS
+.IP \(bu 3
+Git SSH: git@github.com:user/repo.git
+.IP \(bu 3
+Git HTTPS: https://github.com/user/repo.git
+.IP \(bu 3
+GitHub shorthand: user/repo
+.IP \(bu 3
+Local path: /path/to/project
+.RE
+.TP
+.BR \-t ", " \-\-type " \fITYPE\fR"
+Application type: \fBnextjs\fR, \fBnodejs\fR, \fBvite\fR, \fBpython\fR, \fBstatic\fR, or \fBauto\fR (default).
+.TP
+.BR \-p ", " \-\-port " \fIPORT\fR"
+Application port (auto-assigned if not specified).
+.TP
+.BR \-w ", " \-\-webserver " \fISERVER\fR"
+Web server: \fBnginx\fR (default) or \fBapache\fR.
+.TP
+.BR \-b ", " \-\-branch " \fIBRANCH\fR"
+Git branch to deploy (default: main/master).
+.TP
+.BR \-\-no\-ssl
+Skip SSL certificate configuration.
+.TP
+.BR \-\-env\-file " \fIFILE\fR"
+Path to environment variables file.
+.TP
+.BR \-\-pm ", " \-\-package\-manager " \fIPM\fR"
+Package manager: \fBnpm\fR, \fBpnpm\fR, \fBbun\fR, or \fBauto\fR (default).
+.RE
+.TP
+.BR "list" " (alias: " ls ")"
+List all deployed applications with their status.
+.TP
+.BR "status" " (alias: " info ")" " \fIDOMAIN\fR"
+Show detailed status of a deployed application.
+.TP
+.BR "start" " \fIDOMAIN\fR"
+Start a stopped application.
+.TP
+.BR "stop" " \fIDOMAIN\fR"
+Stop a running application.
+.TP
+.BR "restart" " \fIDOMAIN\fR"
+Restart an application (zero-downtime when possible).
+.TP
+.BR "update" " (alias: " upgrade ")" " \fIDOMAIN\fR"
+Update an application by pulling latest changes and rebuilding.
+Creates an automatic backup before updating.
+.RS
+.TP
+.BR \-s ", " \-\-source " \fISOURCE\fR"
+New source (if changing repository).
+.TP
+.BR \-b ", " \-\-branch " \fIBRANCH\fR"
+Git branch to deploy.
+.TP
+.BR \-\-pm ", " \-\-package\-manager " \fIPM\fR"
+Package manager to use.
+.RE
+.TP
+.BR "delete" " (aliases: " remove ", " rm ")" " \fIDOMAIN\fR"
+Delete an application and all its configurations.
+.RS
+.TP
+.BR \-f ", " \-\-force
+Skip confirmation prompt.
+.TP
+.BR \-\-keep\-files
+Keep application files (remove only service and site config).
+.RE
+.TP
+.BR "logs" " \fIDOMAIN\fR"
+View application logs from systemd journal.
+.RS
+.TP
+.BR \-f ", " \-\-follow
+Follow log output in real-time.
+.TP
+.BR \-n ", " \-\-lines " \fIN\fR"
+Number of lines to show (default: 50).
+.RE
+.\"
+.\" --- BACKUP COMMANDS ---
+.\"
+.SS "Backup Management"
+Commands for creating and managing application backups.
+.TP
+.BR "backup create" " (alias: " new ")" " \fIDOMAIN\fR"
+Create a backup of an application.
+.RS
+.TP
+.BR \-\-tag ", " \-t " \fITAG\fR"
+Add tags to the backup (comma-separated). Example: stable,pre-release
+.TP
+.BR \-\-note ", " \-n " \fINOTE\fR"
+Add a descriptive note to the backup.
+.TP
+.BR \-\-include\-node\-modules
+Include node_modules in backup (excluded by default).
+.TP
+.BR \-\-include\-build
+Include build directories in backup (excluded by default).
+.RE
+.TP
+.BR "backup list" " (alias: " ls ")" " [\fIDOMAIN\fR]"
+List all backups, optionally filtered by domain.
+.RS
+.TP
+.BR \-\-tag ", " \-t " \fITAG\fR"
+Filter backups by tag.
+.TP
+.BR \-\-json
+Output in JSON format for scripting.
+.RE
+.TP
+.BR "backup restore" " \fIBACKUP_ID\fR"
+Restore an application from a backup.
+.RS
+.TP
+.BR \-\-yes ", " \-y
+Skip confirmation prompt.
+.RE
+.TP
+.BR "backup delete" " (aliases: " remove ", " rm ")" " \fIBACKUP_ID\fR"
+Delete a backup.
+.RS
+.TP
+.BR \-\-yes ", " \-y
+Skip confirmation prompt.
+.RE
+.TP
+.BR "backup verify" " (alias: " check ")" " \fIBACKUP_ID\fR"
+Verify backup integrity (checksum and archive validity).
+.TP
+.BR "backup info" " (alias: " show ")" " \fIBACKUP_ID\fR"
+Show detailed backup information including metadata, size, and contents.
+.TP
+.BR "backup storage"
+Show backup storage usage statistics per application.
+.RS
+.TP
+.BR \-\-json
+Output in JSON format.
+.RE
+.TP
+.BR "rollback" " (alias: " rb ")" " \fIDOMAIN\fR" " [\fIBACKUP_ID\fR]"
+Quickly rollback an application to the previous state.
+If no backup ID is specified, uses the most recent manual backup
+(automatically skips auto-generated backups from updates).
+.RS
+.TP
+.BR \-\-yes ", " \-y
+Skip confirmation prompt.
+.RE
+.\"
+.\" --- SITE COMMANDS ---
+.\"
+.SS "Site Management"
+Commands for managing web server virtual host configurations.
+.TP
+.BR "site create" " \fIDOMAIN\fR"
+Create a new site configuration.
+.RS
+.TP
+.BR \-t ", " \-\-type " \fITYPE\fR"
+Site type: \fBproxy\fR (default) or \fBstatic\fR.
+.TP
+.BR \-p ", " \-\-port " \fIPORT\fR"
+Backend port for proxy sites.
+.TP
+.BR \-r ", " \-\-root " \fIPATH\fR"
+Document root for static sites.
+.TP
+.BR \-w ", " \-\-webserver " \fISERVER\fR"
+Web server: \fBnginx\fR or \fBapache\fR.
+.RE
+.TP
+.BR "site list" " (alias: " ls ")"
+List all configured sites and their status.
+.TP
+.BR "site enable" " \fIDOMAIN\fR"
+Enable a disabled site.
+.TP
+.BR "site disable" " \fIDOMAIN\fR"
+Disable an active site.
+.TP
+.BR "site show" " (alias: " cat ")" " \fIDOMAIN\fR"
+Display the site configuration file contents.
+.TP
+.BR "site delete" " (aliases: " remove ", " rm ")" " \fIDOMAIN\fR"
+Delete a site configuration.
+.RS
+.TP
+.BR \-f ", " \-\-force
+Skip confirmation prompt.
+.RE
+.\"
+.\" --- SERVICE COMMANDS ---
+.\"
+.SS "Service Management"
+Commands for managing systemd services.
+.TP
+.BR "service create"
+Create a new systemd service.
+.RS
+.TP
+.BR \-n ", " \-\-name " \fINAME\fR"
+Service name (required).
+.TP
+.BR \-c ", " \-\-command " \fICOMMAND\fR"
+Command to execute (required).
+.TP
+.BR \-d ", " \-\-directory " \fIPATH\fR"
+Working directory (required).
+.TP
+.BR \-u ", " \-\-user " \fIUSER\fR"
+User to run as (default: www-data).
+.TP
+.BR \-\-description " \fIDESC\fR"
+Service description.
+.RE
+.TP
+.BR "service list" " (alias: " ls ")"
+List all WASM-managed services.
+.RS
+.TP
+.BR \-a ", " \-\-all
+Show all system services.
+.RE
+.TP
+.BR "service status" " (alias: " info ")" " \fINAME\fR"
+Show service status and details.
+.TP
+.BR "service start" " \fINAME\fR"
+Start a service.
+.TP
+.BR "service stop" " \fINAME\fR"
+Stop a service.
+.TP
+.BR "service restart" " \fINAME\fR"
+Restart a service.
+.TP
+.BR "service logs" " \fINAME\fR"
+View service logs.
+.RS
+.TP
+.BR \-f ", " \-\-follow
+Follow log output.
+.TP
+.BR \-n ", " \-\-lines " \fIN\fR"
+Number of lines to show.
+.RE
+.TP
+.BR "service delete" " (aliases: " remove ", " rm ")" " \fINAME\fR"
+Delete a service.
+.RS
+.TP
+.BR \-f ", " \-\-force
+Skip confirmation prompt.
+.RE
+.\"
+.\" --- CERT COMMANDS ---
+.\"
+.SS "Certificate Management"
+Commands for managing Let's Encrypt SSL certificates.
+.TP
+.BR "cert create" " (aliases: " obtain ", " new ")"
+Obtain a new SSL certificate.
+.RS
+.TP
+.BR \-d ", " \-\-domain " \fIDOMAIN\fR"
+Domain name (required).
+.TP
+.BR \-\-email " \fIEMAIL\fR"
+Email for Let's Encrypt notifications.
+.TP
+.BR \-\-staging
+Use Let's Encrypt staging server (for testing).
+.TP
+.BR \-\-dry\-run
+Test certificate issuance without actually obtaining it.
+.RE
+.TP
+.BR "cert list" " (alias: " ls ")"
+List all installed certificates.
+.TP
+.BR "cert info" " (alias: " show ")" " \fIDOMAIN\fR"
+Show certificate details (expiry date, issuer, etc.).
+.TP
+.BR "cert renew"
+Renew all certificates that are due for renewal.
+.RS
+.TP
+.BR \-\-force
+Force renewal even if not due.
+.TP
+.BR \-\-dry\-run
+Test renewal without actually renewing.
+.RE
+.TP
+.BR "cert revoke" " \fIDOMAIN\fR"
+Revoke a certificate (use with caution).
+.TP
+.BR "cert delete" " (aliases: " remove ", " rm ")" " \fIDOMAIN\fR"
+Delete a certificate.
+.\"
+.\" --- SETUP COMMANDS ---
+.\"
+.SS "Setup Commands"
+Commands for initial setup and system configuration.
+.TP
+.BR "setup init"
+Initialize WASM directories and configuration. Creates:
+.RS
+.IP \(bu 3
+/etc/wasm/config.yaml \- Global configuration
+.IP \(bu 3
+/var/www/apps/ \- Application directory
+.IP \(bu 3
+/var/backups/wasm/ \- Backup storage
+.IP \(bu 3
+/var/log/wasm/ \- Log directory
+.PP
+Requires sudo privileges.
+.RE
+.TP
+.BR "setup completions"
+Install shell completions (bash, zsh, or fish).
+.RS
+.TP
+.BR \-s ", " \-\-shell " \fISHELL\fR"
+Shell type: \fBbash\fR, \fBzsh\fR, or \fBfish\fR (auto-detected if not specified).
+.TP
+.BR \-u ", " \-\-user\-only
+Install for current user only (no sudo required).
+.RE
+.TP
+.BR "setup permissions"
+Check and display current permission status for WASM directories.
+.TP
+.BR "setup ssh"
+Setup SSH key for Git authentication (creates and displays public key).
+.TP
+.BR "setup doctor"
+Run system diagnostics and check for common issues.
+Checks for required dependencies, permissions, and configurations.
+.\"
+.\" --- MONITOR COMMANDS ---
+.\"
+.SS "Monitoring Commands"
+AI-powered security and process monitoring.
+.TP
+.BR "monitor status"
+Show current monitor daemon status.
+.TP
+.BR "monitor start"
+Start the monitoring daemon.
+.TP
+.BR "monitor stop"
+Stop the monitoring daemon.
+.TP
+.BR "monitor analyze"
+Run an immediate security analysis.
+.\"
+.\" ===== CONFIGURATION =====
+.\"
+.SH CONFIGURATION
+.SS "Global Configuration"
+The main configuration file is located at \fB/etc/wasm/config.yaml\fR:
+.PP
+.RS
+.nf
+# WASM Configuration
+apps_directory: /var/www/apps
+backup_directory: /var/backups/wasm
+webserver: nginx
+service_user: www-data
+
+ssl:
+  enabled: true
+  provider: certbot
+  email: admin@example.com
+
+backup:
+  max_per_app: 10
+  auto_backup: true
+  exclude:
+    - node_modules
+    - .git
+    - __pycache__
+    - .next/cache
+.fi
+.RE
+.SS "Project Configuration"
+Projects can include a \fB.wasm.yaml\fR file in the root directory:
+.PP
+.RS
+.nf
+type: nextjs
+port: 3000
+build_command: npm run build
+start_command: npm run start
+health_check: /api/health
+env:
+  NODE_ENV: production
+  DATABASE_URL: ${DATABASE_URL}
+.fi
+.RE
+.SS "Environment Variables"
+.TP
+.B WASM_CONFIG
+Path to custom configuration file.
+.TP
+.B WASM_VERBOSE
+Set to "1" to enable verbose output by default.
+.TP
+.B WASM_NO_COLOR
+Set to "1" to disable colored output.
+.\"
+.\" ===== FILES =====
+.\"
+.SH FILES
+.TP
+.I /etc/wasm/config.yaml
+Global WASM configuration file.
+.TP
+.I /var/www/apps/
+Default directory for deployed applications.
+.TP
+.I /var/backups/wasm/
+Backup storage directory.
+.TP
+.I /var/log/wasm/
+WASM log files.
+.TP
+.I /etc/nginx/sites-available/
+Nginx site configurations.
+.TP
+.I /etc/nginx/sites-enabled/
+Enabled Nginx sites (symlinks).
+.TP
+.I /etc/systemd/system/wasm-*.service
+WASM-managed systemd service files.
+.TP
+.I ~/.local/share/bash-completion/completions/wasm
+User-level bash completions.
+.TP
+.I /usr/share/bash-completion/completions/wasm
+System-wide bash completions.
+.\"
+.\" ===== EXAMPLES =====
+.\"
+.SH EXAMPLES
+.SS "Deploy a Next.js Application"
+.PP
+.RS
+.nf
+# Deploy from GitHub with SSL
+wasm create \\
+    --domain myapp.example.com \\
+    --source git@github.com:user/nextjs-app.git \\
+    --type nextjs
+
+# Deploy without SSL (for local testing)
+wasm create -d test.local -s /path/to/app -t nextjs --no-ssl
+
+# Deploy using pnpm
+wasm create -d app.com -s user/repo --pm pnpm
+.fi
+.RE
+.SS "Manage Application Lifecycle"
+.PP
+.RS
+.nf
+# List all applications
+wasm list
+
+# Check application status
+wasm status myapp.example.com
+
+# View logs
+wasm logs myapp.example.com --follow
+
+# Restart application
+wasm restart myapp.example.com
+
+# Update with latest changes
+wasm update myapp.example.com
+
+# Delete application
+wasm delete myapp.example.com
+.fi
+.RE
+.SS "Backup and Rollback"
+.PP
+.RS
+.nf
+# Create a backup before making changes
+wasm backup create myapp.example.com --tag stable --note "Before feature X"
+
+# List all backups
+wasm backup list
+
+# List backups for specific app
+wasm backup list myapp.example.com
+
+# Verify backup integrity
+wasm backup verify myapp-example-com_20251218_120000
+
+# View backup details
+wasm backup info myapp-example-com_20251218_120000
+
+# Restore from backup
+wasm backup restore myapp-example-com_20251218_120000
+
+# Quick rollback to previous state
+wasm rollback myapp.example.com
+
+# Check storage usage
+wasm backup storage
+.fi
+.RE
+.SS "Site and Service Management"
+.PP
+.RS
+.nf
+# Create a reverse proxy site manually
+wasm site create api.example.com --type proxy --port 8080
+
+# Create a static site
+wasm site create static.example.com --type static --root /var/www/static
+
+# List all sites
+wasm site list
+
+# Create a custom service
+wasm service create \\
+    --name my-worker \\
+    --command "/usr/bin/node /app/worker.js" \\
+    --directory /app \\
+    --user www-data
+
+# View service status
+wasm service status my-worker
+.fi
+.RE
+.SS "SSL Certificate Management"
+.PP
+.RS
+.nf
+# Obtain a new certificate
+wasm cert create -d example.com --email admin@example.com
+
+# List certificates
+wasm cert list
+
+# Check certificate expiry
+wasm cert info example.com
+
+# Renew all certificates
+wasm cert renew
+.fi
+.RE
+.SS "Initial Setup"
+.PP
+.RS
+.nf
+# Initialize WASM (first time setup)
+sudo wasm setup init
+
+# Install shell completions
+wasm setup completions --shell bash
+
+# Run system diagnostics
+wasm setup doctor
+
+# Setup SSH for Git
+wasm setup ssh
+.fi
+.RE
+.SS "Interactive Mode"
+.PP
+.RS
+.nf
+# Start interactive mode for guided deployment
+wasm --interactive
+.fi
+.RE
+.\"
+.\" ===== EXIT STATUS =====
+.\"
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+General error or operation failed.
+.TP
+.B 2
+Invalid command or arguments.
+.TP
+.B 126
+Permission denied.
+.TP
+.B 127
+Command or dependency not found.
+.\"
+.\" ===== SUPPORTED APPLICATION TYPES =====
+.\"
+.SH SUPPORTED APPLICATION TYPES
+.TP
+.B nextjs
+Next.js applications. Auto-detects next.config.js, next.config.mjs, or next.config.ts.
+Uses \fBnpm run build\fR and \fBnpm run start\fR by default.
+.TP
+.B nodejs
+Generic Node.js applications (Express, Fastify, Koa, etc.).
+Detects package.json with server-side dependencies.
+.TP
+.B vite
+Vite-based frontend applications (React, Vue, Svelte).
+Can run in SSR mode or as static build.
+.TP
+.B python
+Python web applications (Django, Flask, FastAPI).
+Detects requirements.txt, pyproject.toml, or Pipfile.
+Uses gunicorn or uvicorn as WSGI/ASGI server.
+.TP
+.B static
+Static HTML/CSS/JavaScript sites.
+Served directly by Nginx without a backend service.
+.\"
+.\" ===== DEPENDENCIES =====
+.\"
+.SH DEPENDENCIES
+.SS "Required"
+.IP \(bu 3
+Python 3.10+
+.IP \(bu 3
+nginx or apache2
+.IP \(bu 3
+systemd
+.IP \(bu 3
+git
+.SS "Optional"
+.IP \(bu 3
+certbot (for SSL certificates)
+.IP \(bu 3
+nodejs/npm (for Node.js applications)
+.IP \(bu 3
+pnpm, bun, or yarn (alternative package managers)
+.IP \(bu 3
+python3-venv (for Python applications)
+.\"
+.\" ===== SECURITY =====
+.\"
+.SH SECURITY
+.IP \(bu 3
+WASM runs deployment commands with elevated privileges. Ensure you trust the source code being deployed.
+.IP \(bu 3
+Services are created with \fBNoNewPrivileges=true\fR and \fBPrivateTmp=true\fR for security.
+.IP \(bu 3
+SSL certificates are automatically configured with modern, secure defaults (TLS 1.2+).
+.IP \(bu 3
+Environment variables containing secrets should be stored securely and not committed to Git.
+.\"
+.\" ===== TROUBLESHOOTING =====
+.\"
+.SH TROUBLESHOOTING
+.SS "Common Issues"
+.TP
+.B "Permission denied" errors
+Run \fBsudo wasm setup init\fR to configure directories and permissions.
+Ensure your user is in the \fBwww-data\fR group: \fBsudo usermod -aG www-data $USER\fR
+.TP
+.B "Package manager not found"
+Run \fBwasm setup doctor\fR to check dependencies.
+Install Node.js: \fBsudo apt install nodejs npm\fR
+.TP
+.B "SSL certificate failed"
+Ensure the domain points to your server's IP address.
+Check firewall allows ports 80 and 443.
+Try \fBwasm cert create -d domain.com --dry-run\fR to test.
+.TP
+.B "Application won't start"
+Check logs: \fBwasm logs domain.com\fR
+Verify port is available: \fBss -tlnp | grep PORT\fR
+Check service status: \fBwasm service status domain\fR
+.TP
+.B "Nginx configuration error"
+Test config: \fBsudo nginx -t\fR
+View site config: \fBwasm site show domain.com\fR
+Check for duplicate server_name or port conflicts.
+.SS "Debug Mode"
+Use \fB--verbose\fR flag for detailed output:
+.PP
+.RS
+.nf
+wasm --verbose create -d example.com -s user/repo
+.fi
+.RE
+.SS "Getting Help"
+.IP \(bu 3
+Run \fBwasm setup doctor\fR for automated diagnostics
+.IP \(bu 3
+Check logs in /var/log/wasm/
+.IP \(bu 3
+Report issues at https://github.com/Perkybeet/wasm/issues
+.\"
+.\" ===== BUGS =====
+.\"
+.SH BUGS
+Report bugs at: https://github.com/Perkybeet/wasm/issues
+.\"
+.\" ===== AUTHOR =====
+.\"
+.SH AUTHOR
+Written by Yago López Prado <yago.lopez.adeje@gmail.com>
+.\"
+.\" ===== COPYRIGHT =====
+.\"
+.SH COPYRIGHT
+Copyright \(co 2024-2025 Yago López Prado.
+Licensed under the MIT License.
+.\"
+.\" ===== SEE ALSO =====
+.\"
+.SH SEE ALSO
+.BR nginx (8),
+.BR systemctl (1),
+.BR certbot (1),
+.BR journalctl (1),
+.BR git (1),
+.BR npm (1)
+.PP
+Full documentation: https://github.com/Perkybeet/wasm
+.PP
+PPA installation:
+.RS
+.nf
+sudo add-apt-repository ppa:yago2003/wasm
+sudo apt update
+sudo apt install wasm
+.fi
+.RE

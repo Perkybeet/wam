@@ -15,9 +15,12 @@ wasm (0.10.0-1~noble) noble; urgency=medium
   * Git commit/branch tracking in backup metadata
   * Exclude node_modules, .git, cache by default (configurable)
   * JSON output support for automation (--json flag)
+  * Fix: Service create --command argument conflict
+  * Fix: Nginx template duplicate location for health_check=/
+  * Improvement: Use absolute paths in systemd services
   * 132 tests passing
 
- -- Yago López Prado <yago.lopez.adeje@gmail.com>  Sun, 19 Jan 2025 12:00:00 +0000
+ -- Yago López Prado <yago.lopez.adeje@gmail.com>  Wed, 18 Dec 2024 18:00:00 +0000
 
 wasm (0.9.2-1~noble) noble; urgency=medium
 
