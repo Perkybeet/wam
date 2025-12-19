@@ -105,6 +105,8 @@ jobs:
     environment:
       name: pypi
       url: https://pypi.org/p/wasm-cli
+    permissions:
+      id-token: write  # Required for trusted publishing
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -115,14 +117,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install build tools
-        run: pip install build twine
+        run: pip install build
 
       - name: Build package
         run: python -m build
 
       - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: twine upload dist/*
-        continue-on-error: true  # Don't fail if package already exists
+        uses: pypa/gh-action-pypi-publish@release/v1
