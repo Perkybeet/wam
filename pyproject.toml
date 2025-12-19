@@ -66,10 +66,10 @@ monitor = [
 wasm = "wasm.main:cli"
 
 [project.urls]
-Homepage = "https://github.com/your-org/wasm"
-Documentation = "https://github.com/your-org/wasm#readme"
-Repository = "https://github.com/your-org/wasm.git"
-"Bug Tracker" = "https://github.com/your-org/wasm/issues"
+Homepage = "https://github.com/Perkybeet/wasm"
+Documentation = "https://github.com/Perkybeet/wasm#readme"
+Repository = "https://github.com/Perkybeet/wasm.git"
+"Bug Tracker" = "https://github.com/Perkybeet/wasm/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
