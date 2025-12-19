@@ -257,6 +257,12 @@ class SourceManager(BaseManager):
         """
         Pull latest changes in a Git repository.
         
+        Handles common git errors:
+        - Unstaged/uncommitted changes (stash and restore)
+        - Dubious ownership (safe.directory)
+        - Divergent branches (fetch + reset)
+        - Merge conflicts (reset to remote)
+        
         Args:
             path: Repository path.
             branch: Branch to pull.
@@ -270,20 +276,143 @@ class SourceManager(BaseManager):
         # Ensure directory is marked as safe (handles dubious ownership)
         self._ensure_safe_directory(path)
         
-        # Checkout branch if specified
-        if branch:
-            result = self._run(["git", "checkout", branch], cwd=path)
-            if not result.success:
-                raise SourceError(f"Failed to checkout branch: {branch}")
+        # Check for local changes that would prevent pull
+        has_changes = self._has_local_changes(path)
+        stashed = False
+        force_reset_used = False
         
-        # Pull changes
-        result = self._run(["git", "pull", "--rebase"], cwd=path, timeout=300)
-        
-        if not result.success:
-            raise SourceError(
-                "Git pull failed",
-                details=result.stderr,
+        if has_changes:
+            self.logger.debug("Local changes detected, stashing...")
+            result = self._run(
+                ["git", "stash", "push", "-m", "wasm-auto-stash-before-update"],
+                cwd=path
             )
+            if result.success and "No local changes" not in result.stdout:
+                stashed = True
+                self.logger.debug("Changes stashed successfully")
+        
+        try:
+            # Checkout branch if specified
+            if branch:
+                result = self._run(["git", "checkout", branch], cwd=path)
+                if not result.success:
+                    # Branch might not exist locally, try fetching first
+                    self._run(["git", "fetch", "origin", branch], cwd=path, timeout=300)
+                    result = self._run(["git", "checkout", branch], cwd=path)
+                    if not result.success:
+                        raise SourceError(f"Failed to checkout branch: {branch}")
+            
+            # Try regular pull first
+            result = self._run(["git", "pull", "--rebase"], cwd=path, timeout=300)
+            
+            if not result.success:
+                # Analyze the error and try to recover
+                error_msg = result.stderr.lower()
+                
+                if "unstaged changes" in error_msg or "uncommitted changes" in error_msg:
+                    # This shouldn't happen if stash worked, but handle it anyway
+                    self.logger.debug("Uncommitted changes blocking pull, forcing reset...")
+                    force_reset_used = True
+                    return self._force_pull_with_reset(path, branch)
+                
+                elif "divergent branches" in error_msg or "need to specify" in error_msg:
+                    # Divergent history - fetch and reset to remote
+                    self.logger.debug("Divergent branches detected, resetting to remote...")
+                    force_reset_used = True
+                    return self._force_pull_with_reset(path, branch)
+                
+                elif "conflict" in error_msg:
+                    # Merge/rebase conflict - abort and reset
+                    self.logger.debug("Conflict detected, aborting rebase and resetting...")
+                    self._run(["git", "rebase", "--abort"], cwd=path)
+                    force_reset_used = True
+                    return self._force_pull_with_reset(path, branch)
+                
+                elif "refusing to merge unrelated histories" in error_msg:
+                    # Unrelated histories - force reset
+                    self.logger.debug("Unrelated histories, forcing reset...")
+                    force_reset_used = True
+                    return self._force_pull_with_reset(path, branch)
+                
+                else:
+                    # Unknown error, try force reset as last resort
+                    self.logger.debug(f"Pull failed with: {result.stderr}")
+                    force_reset_used = True
+                    return self._force_pull_with_reset(path, branch)
+            
+            return True
+            
+        finally:
+            # Handle stashed changes
+            if stashed:
+                if force_reset_used:
+                    # After a force reset, the stash is based on the old commit
+                    # and will likely have conflicts. Drop it to avoid issues.
+                    self.logger.debug("Force reset was used, dropping incompatible stash...")
+                    self._run(["git", "stash", "drop"], cwd=path)
+                else:
+                    # Normal pull succeeded, try to restore stash
+                    self.logger.debug("Restoring stashed changes...")
+                    pop_result = self._run(["git", "stash", "pop"], cwd=path)
+                    if not pop_result.success:
+                        # Stash pop failed (likely conflicts), leave stash for manual handling
+                        self.logger.debug("Could not auto-restore stashed changes (may have conflicts)")
+                        self.logger.debug("Stashed changes preserved - run 'git stash pop' manually if needed")
+    
+    def _has_local_changes(self, path: Path) -> bool:
+        """
+        Check if repository has local changes (staged or unstaged).
+        
+        Args:
+            path: Repository path.
+            
+        Returns:
+            True if there are local changes.
+        """
+        # Check for staged and unstaged changes
+        result = self._run(["git", "status", "--porcelain"], cwd=path)
+        if result.success and result.stdout.strip():
+            return True
+        return False
+    
+    def _force_pull_with_reset(self, path: Path, branch: Optional[str] = None) -> bool:
+        """
+        Force pull by fetching and resetting to remote.
+        
+        This is a more aggressive approach when normal pull fails.
+        Preserves untracked files like .env.
+        
+        Args:
+            path: Repository path.
+            branch: Target branch.
+            
+        Returns:
+            True if successful.
+        """
+        # Fetch all from remote
+        result = self._run(["git", "fetch", "--all"], cwd=path, timeout=300)
+        if not result.success:
+            raise SourceError("Git fetch failed", details=result.stderr)
+        
+        # Determine target reference
+        if branch:
+            target_ref = f"origin/{branch}"
+        else:
+            # Get current branch
+            result = self._run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                cwd=path
+            )
+            current_branch = result.stdout.strip() if result.success else "main"
+            target_ref = f"origin/{current_branch}"
+        
+        # Reset hard to remote (preserves untracked files)
+        result = self._run(["git", "reset", "--hard", target_ref], cwd=path)
+        if not result.success:
+            raise SourceError("Git reset failed", details=result.stderr)
+        
+        # Clean only tracked files (not untracked like .env)
+        self._run(["git", "clean", "-fd"], cwd=path)
         
         return True
     

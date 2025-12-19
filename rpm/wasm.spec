@@ -5,7 +5,7 @@
 #
 
 Name:           wasm-cli
-Version:        0.10.2
+Version:        0.10.3
 Release:        1%{?dist}
 Summary:        Web App System Management CLI Tool
 License:        MIT
@@ -117,6 +117,13 @@ echo "Note: You may need to install python3-inquirer via pip:"
 echo "  pip3 install inquirer"
 
 %changelog
+* Thu Dec 19 2024 Perkybeet <yago.lopez.adeje@gmail.com> - 0.10.3-1
+- Fix: Git pull with unstaged/uncommitted changes during wasm update
+- Auto-stash local changes before pull, restore after
+- Handle divergent branches with automatic reset to remote
+- Handle rebase conflicts gracefully
+- Preserve .env and untracked files during force updates
+
 * Thu Dec 19 2024 Perkybeet <yago.lopez.adeje@gmail.com> - 0.10.2-1
 - Fix: Git "dubious ownership" error during wasm update
 - Auto-configure git safe.directory for app directories

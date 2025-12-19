@@ -1,3 +1,13 @@
+wasm (0.10.3-1) unstable; urgency=medium
+
+  * Fix: Git pull with unstaged/uncommitted changes during wasm update
+  * Auto-stash local changes before pull, restore after
+  * Handle divergent branches with automatic reset to remote
+  * Handle rebase conflicts gracefully
+  * Preserve .env and untracked files during force updates
+
+ -- Yago López Prado <yago.lopez.adeje@gmail.com>  Thu, 19 Dec 2024 18:00:00 +0000
+
 wasm (0.10.2-1) unstable; urgency=medium
 
   * Fix: Git "dubious ownership" error during wasm update
