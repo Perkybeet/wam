@@ -141,20 +141,25 @@ jobs:
           sudo apt-get install -y osc
 
       - name: Configure osc
+        env:
+          OBS_USER: ${{ secrets.OBS_USER }}
+          OBS_PASS: ${{ secrets.OBS_PASS }}
         run: |
           mkdir -p ~/.config/osc
-          cat > ~/.config/osc/oscrc << 'EOF'
+          cat > ~/.config/osc/oscrc << EOF
           [general]
           apiurl = https://api.opensuse.org
 
           [https://api.opensuse.org]
-          user = ${{ secrets.OBS_USER }}
-          pass = ${{ secrets.OBS_PASS }}
+          user = ${OBS_USER}
+          pass = ${OBS_PASS}
           trusted_prj = openSUSE:Factory openSUSE:Tumbleweed
           EOF
           # Fix indentation (heredoc adds leading spaces)
           sed -i 's/^          //' ~/.config/osc/oscrc
           chmod 600 ~/.config/osc/oscrc
+          # Verify config
+          echo "OSC config created. User: ${OBS_USER}"
 
       - name: Get version
         id: version
