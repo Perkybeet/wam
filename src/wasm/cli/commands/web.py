@@ -71,15 +71,65 @@ def handle_web(args: Namespace) -> int:
         return 1
 
 
-def _check_dependencies() -> bool:
-    """Check if web dependencies are installed."""
+def _check_dependencies() -> tuple[bool, list[str]]:
+    """Check if web dependencies are installed.
+    
+    Returns:
+        Tuple of (all_installed, missing_packages)
+    """
+    missing = []
+    
     try:
         import fastapi
-        import uvicorn
-        import jose
-        return True
     except ImportError:
-        return False
+        missing.append("python3-fastapi")
+    
+    try:
+        import uvicorn
+    except ImportError:
+        missing.append("python3-uvicorn")
+    
+    try:
+        import jose
+    except ImportError:
+        missing.append("python3-jose")
+    
+    try:
+        import passlib
+    except ImportError:
+        missing.append("python3-passlib")
+    
+    try:
+        import aiofiles
+    except ImportError:
+        missing.append("python3-aiofiles")
+    
+    return (len(missing) == 0, missing)
+
+
+def _get_install_instructions(missing: list[str]) -> list[str]:
+    """Get installation instructions based on the system."""
+    instructions = []
+    
+    # Check if running on a Debian-based system
+    if Path("/etc/debian_version").exists():
+        instructions.append(f"sudo apt install {' '.join(missing)}")
+    # Check if running on a Fedora/RHEL-based system
+    elif Path("/etc/fedora-release").exists() or Path("/etc/redhat-release").exists():
+        instructions.append(f"sudo dnf install {' '.join(missing)}")
+    # Check if running on openSUSE
+    elif Path("/etc/SuSE-release").exists() or Path("/etc/os-release").exists():
+        try:
+            with open("/etc/os-release") as f:
+                if "opensuse" in f.read().lower():
+                    instructions.append(f"sudo zypper install {' '.join(missing)}")
+        except Exception:
+            pass
+    
+    # Always add pip as fallback option
+    instructions.append("pip install wasm-cli[web]")
+    
+    return instructions
 
 
 def _handle_start(args: Namespace) -> int:
@@ -87,9 +137,14 @@ def _handle_start(args: Namespace) -> int:
     logger = Logger(verbose=args.verbose)
     
     # Check dependencies
-    if not _check_dependencies():
+    all_installed, missing = _check_dependencies()
+    if not all_installed:
         logger.error("Web dependencies not installed")
-        logger.info("Install with: pip install wasm-cli[web]")
+        logger.info(f"Missing packages: {', '.join(missing)}")
+        logger.info("")
+        logger.info("Install with one of the following:")
+        for instruction in _get_install_instructions(missing):
+            logger.info(f"  {instruction}")
         return 1
     
     # Check if already running
@@ -315,8 +370,14 @@ def _handle_token(args: Namespace) -> int:
     """Handle token regeneration."""
     logger = Logger(verbose=args.verbose)
     
-    if not _check_dependencies():
+    all_installed, missing = _check_dependencies()
+    if not all_installed:
         logger.error("Web dependencies not installed")
+        logger.info(f"Missing packages: {', '.join(missing)}")
+        logger.info("")
+        logger.info("Install with one of the following:")
+        for instruction in _get_install_instructions(missing):
+            logger.info(f"  {instruction}")
         return 1
     
     from wasm.web.auth import TokenManager, SecurityConfig
