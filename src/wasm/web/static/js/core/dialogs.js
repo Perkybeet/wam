@@ -3,6 +3,8 @@
  * Enhanced confirmation dialogs replacing browser confirm().
  */
 
+import { escapeHtml } from './ui.js';
+
 /**
  * Show a styled confirmation dialog
  * @param {Object} options - Dialog options
@@ -197,12 +199,6 @@ export function showInputDialog({
             input.select();
         }, 50);
     });
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text || '';
-    return div.innerHTML;
 }
 
 // Make dialogs available globally
