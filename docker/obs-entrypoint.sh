@@ -86,7 +86,8 @@ obs_upload() {
     cd /workspace
     
     # Get version from changelog (e.g., "0.10.0-1~noble" -> "0.10.0-1")
-    VERSION=$(head -n 1 debian/changelog 2>/dev/null | sed 's/.*(\(.*\)).*/\1/' | cut -d'~' -f1 || echo "0.10.0-1")
+    # Files are in obs/ directory (not debian/)
+    VERSION=$(head -n 1 obs/debian.changelog 2>/dev/null | sed 's/.*(\(.*\)).*/\1/' | cut -d'~' -f1 || echo "0.10.0-1")
     # Extract base version for RPM (remove debian revision: "0.10.0-1" -> "0.10.0")
     VERSION_BASE=$(echo "${VERSION}" | cut -d'-' -f1)
     echo -e "${BLUE}[*] Version: ${VERSION} (base: ${VERSION_BASE})${NC}"
@@ -145,12 +146,12 @@ obs_upload() {
         cp /workspace/obs/debian.copyright .
         cp /workspace/obs/debian.postinst . 2>/dev/null || true
         cp /workspace/obs/debian.postrm . 2>/dev/null || true
-        # Config file: copy from debian/ (single source of truth)
-        cp /workspace/debian/wasm.default.yaml debian.wasm.default.yaml 2>/dev/null || true
+        # Config file: copy from obs/ directory
+        cp /workspace/obs/wasm.default.yaml debian.wasm.default.yaml 2>/dev/null || true
         # Same file for RPM (used as Source1)
-        cp /workspace/debian/wasm.default.yaml . 2>/dev/null || true
+        cp /workspace/obs/wasm.default.yaml . 2>/dev/null || true
         # Man page for RPM (used as Source2)
-        cp /workspace/debian/wasm.1 . 2>/dev/null || true
+        cp /workspace/obs/wasm.1 . 2>/dev/null || true
         cp /workspace/obs/wasm.dsc .
         # Update version in .dsc
         sed -i "s/^Version:.*/Version: ${VERSION}/" wasm.dsc
