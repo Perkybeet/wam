@@ -26,14 +26,6 @@ BuildRequires:  python3-wheel
 Requires:       python3-jinja2 >= 3.1.0
 Requires:       python3-pyyaml >= 6.0
 Requires:       python3-inquirer >= 3.1.0
-# Web interface dependencies (optional, install via pip if not available)
-Recommends:     python3-fastapi >= 0.109.0
-Recommends:     python3-uvicorn >= 0.27.0
-Recommends:     python3-jose >= 3.3.0
-Recommends:     python3-passlib >= 1.7.4
-Recommends:     python3-bcrypt
-Recommends:     python3-psutil >= 5.9.0
-Recommends:     python3-aiofiles >= 23.0.0
 %endif
 
 # openSUSE specific
@@ -42,14 +34,6 @@ BuildRequires:  python3-wheel
 Requires:       python3-Jinja2 >= 3.1.0
 Requires:       python3-PyYAML >= 6.0
 # inquirer may need to be installed via pip on SUSE
-# Web interface dependencies (optional, install via pip if not available)
-Recommends:     python3-fastapi >= 0.109.0
-Recommends:     python3-uvicorn >= 0.27.0
-Recommends:     python3-python-jose >= 3.3.0
-Recommends:     python3-passlib >= 1.7.4
-Recommends:     python3-bcrypt
-Recommends:     python3-psutil >= 5.9.0
-Recommends:     python3-aiofiles >= 23.0.0
 %endif
 
 # Runtime requirements (common)
@@ -135,21 +119,7 @@ echo "Note: You may need to install python3-inquirer via pip:"
 echo "  pip3 install inquirer"
 
 %changelog
-* Sun Dec 21 2025 Perkybeet <yago.lopez.adeje@gmail.com> - 0.11.3-1
-- Fix: GitHub Actions workflow version extraction for OBS tarball naming
-
-* Sun Dec 21 2025 Perkybeet <yago.lopez.adeje@gmail.com> - 0.11.2-1
-- Fix: Make web dependencies optional (Recommends) for OBS packages
-- Web deps like python3-fastapi not available as native packages in Fedora/openSUSE
-
-* Sat Dec 20 2025 Perkybeet <yago.lopez.adeje@gmail.com> - 0.11.1-1
-- Fix: Include web dependencies in OBS packages (deb/rpm)
-- Add python3-fastapi, python3-uvicorn, python3-jose as dependencies
-- Add python3-passlib, python3-bcrypt, python3-psutil, python3-aiofiles
-- Improve error messages for missing web dependencies
-- Show OS-specific installation instructions (apt/dnf/zypper/pip)
-
-* Thu Dec 19 2024 Perkybeet <yago.lopez.adeje@gmail.com> - 0.11.0-1
+* Thu Dec 19 2024 Perkybeet <yago.lopez.adeje@gmail.com> - 0.11.4-1
 - New feature: Web Interface Dashboard (wasm web start/stop/status)
 - REST API for remote application management
 - Real-time WebSocket updates for logs and events
@@ -159,35 +129,18 @@ echo "  pip3 install inquirer"
 - API endpoints: /api/backups, /api/monitor, /api/system, /api/config
 - Background job processing with progress tracking
 - Optional dependencies: pip install wasm-cli[web]
-
-* Sat Dec 21 2024 Perkybeet <yago.lopez.adeje@gmail.com> - 0.11.4-1
-- Fix: Backup API using wrong attribute names (backup_id vs id)
-- Fix: Add -y flag as alias for --force/-f in delete commands
-- Fix: WebSocket logs handler error handling and stderr capture
-- Fix: Frontend logs page now handles error and warning messages
-- Fix: Create backup endpoint using correct BackupManager.create() signature
-
-* Thu Dec 19 2024 Perkybeet <yago.lopez.adeje@gmail.com> - 0.10.5-1
 - Detect OOM (Out of Memory) build failures with exit code 137
 - Provide actionable suggestions for resolving memory issues
 - Add OutOfMemoryError exception with swap/memory configuration tips
-
-* Thu Dec 19 2024 Perkybeet <yago.lopez.adeje@gmail.com> - 0.10.4-1
 - CI: Automatic deployment to OBS on release
 - Fix: OBS deployment configuration in GitHub Actions
-
-* Thu Dec 19 2024 Perkybeet <yago.lopez.adeje@gmail.com> - 0.10.3-1
 - Fix: Git pull with unstaged/uncommitted changes during wasm update
 - Auto-stash local changes before pull, restore after
 - Handle divergent branches with automatic reset to remote
 - Handle rebase conflicts gracefully
 - Preserve .env and untracked files during force updates
-
-* Thu Dec 19 2024 Perkybeet <yago.lopez.adeje@gmail.com> - 0.10.2-1
 - Fix: Git "dubious ownership" error during wasm update
 - Auto-configure git safe.directory for app directories
-
-* Thu Dec 19 2024 Perkybeet <yago.lopez.adeje@gmail.com> - 0.10.1-1
 - Add man page (wasm.1) for all distributions
 - Fix RPM packaging to include man page
 - Improve documentation

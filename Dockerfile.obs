@@ -30,6 +30,9 @@ RUN zypper refresh && zypper install -y \
     vim \
     && zypper clean -a
 
+# Configure git to trust mounted workspace
+RUN git config --global --add safe.directory /workspace
+
 # Create workspace directory
 WORKDIR /workspace
 
